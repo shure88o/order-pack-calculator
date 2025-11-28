@@ -53,6 +53,21 @@ section {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.pack-size-item input.duplicate {
+    border-color: #f44336;
+    background-color: #ffebee;
+}
+
+.pack-size-item input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.pack-size-item input.duplicate:focus {
+    border-color: #f44336;
 }
 
 .pack-size-item button {
@@ -106,8 +121,14 @@ section {
     color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
     background-color: #45a049;
+}
+
+.btn-primary:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .btn-secondary {

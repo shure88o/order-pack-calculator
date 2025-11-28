@@ -92,6 +92,32 @@ curl -X PUT http://localhost:8080/api/packs \
 go test ./...
 ```
 
+Run tests with verbose output:
+```bash
+go test -v ./...
+```
+
+### Edge Case Example
+
+The algorithm handles large orders efficiently. Example:
+- **Pack Sizes:** 23, 31, 53
+- **Order Quantity:** 500,000
+- **Result:** {23: 2, 31: 7, 53: 9429} = exactly 500,000 items
+
+Test it:
+```bash
+curl -X POST http://localhost:8080/api/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"order_quantity": 500000}'
+```
+
+Or update pack sizes first:
+```bash
+curl -X PUT http://localhost:8080/api/packs \
+  -H "Content-Type: application/json" \
+  -d '{"pack_sizes": [23, 31, 53]}'
+```
+
 ## How it Works
 
 Uses dynamic programming to find the optimal combination. Similar to the coin change problem, but we need to minimize excess items first, then minimize pack count.
@@ -115,9 +141,44 @@ web/              - frontend files
 
 ## Configuration
 
-Set pack sizes via environment variable:
+### Using .env file (recommended)
+
+Copy the example file and edit it:
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```bash
+PORT=8080
+PACK_SIZES=250,500,1000,2000,5000
+# STORAGE_FILE=./pack_sizes.json  # Uncomment to enable persistence
+```
+
+Then run:
+```bash
+go run ./cmd/server
+```
+
+### Using environment variables directly
+
 ```bash
 PACK_SIZES=100,250,500 PORT=3000 go run ./cmd/server
 ```
 
 Or change them at runtime through the UI or API.
+
+### Persistence (Optional)
+
+To enable persistence of pack sizes across server restarts, set the `STORAGE_FILE` environment variable:
+
+```bash
+STORAGE_FILE=./pack_sizes.json go run ./cmd/server
+```
+
+When persistence is enabled:
+- Pack sizes are automatically saved to the specified file when updated via API
+- On server restart, pack sizes are loaded from the file
+- If the file doesn't exist, default pack sizes are used
+
+**Note:** Without `STORAGE_FILE`, pack sizes are stored in memory only and will reset on server restart.

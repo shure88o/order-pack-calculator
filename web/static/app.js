@@ -36,6 +36,19 @@ async function loadPackSizes() {
     }
 }
 
+// Get current values from input fields (preserves unsaved changes)
+function getCurrentInputValues() {
+    const inputs = document.querySelectorAll('#packSizesContainer input');
+    const values = [];
+    inputs.forEach(input => {
+        const value = parseInt(input.value);
+        if (value && value > 0) {
+            values.push(value);
+        }
+    });
+    return values;
+}
+
 // Render pack size inputs
 function renderPackSizes() {
     const container = document.getElementById('packSizesContainer');
@@ -50,6 +63,7 @@ function renderPackSizes() {
         input.min = '1';
         input.value = size;
         input.dataset.index = index;
+        input.addEventListener('input', validateDuplicates);
 
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
@@ -60,22 +74,96 @@ function renderPackSizes() {
         div.appendChild(removeBtn);
         container.appendChild(div);
     });
+
+    // Validate after rendering
+    validateDuplicates();
 }
 
-// Add new pack size input
+// Add new pack size input (preserves current input values)
 function addPackSizeInput() {
-    currentPackSizes.push(250);
+    // Save current input values before adding new one
+    const currentValues = getCurrentInputValues();
+    
+    // Add new pack size (use last value or default to 250)
+    const newValue = currentValues.length > 0 ? currentValues[currentValues.length - 1] : 250;
+    currentValues.push(newValue);
+    
+    // Update currentPackSizes with preserved values
+    currentPackSizes = currentValues;
     renderPackSizes();
 }
 
-// Remove pack size
+// Remove pack size (preserves current input values)
 function removePackSize(index) {
-    currentPackSizes.splice(index, 1);
+    // Save current input values before removing
+    const currentValues = getCurrentInputValues();
+    currentValues.splice(index, 1);
+    
+    // Update currentPackSizes with preserved values
+    currentPackSizes = currentValues;
     renderPackSizes();
+}
+
+// Validate for duplicate pack sizes and highlight them
+function validateDuplicates() {
+    const inputs = document.querySelectorAll('#packSizesContainer input');
+    const values = [];
+    const valueCounts = {};
+    
+    // Collect all values and count occurrences
+    inputs.forEach(input => {
+        const value = parseInt(input.value);
+        if (value && value > 0) {
+            values.push(value);
+            valueCounts[value] = (valueCounts[value] || 0) + 1;
+        }
+    });
+    
+    // Find duplicates
+    const duplicates = new Set();
+    Object.keys(valueCounts).forEach(value => {
+        if (valueCounts[value] > 1) {
+            duplicates.add(parseInt(value));
+        }
+    });
+    
+    // Highlight duplicate inputs
+    inputs.forEach(input => {
+        const value = parseInt(input.value);
+        if (value && duplicates.has(value)) {
+            input.classList.add('duplicate');
+        } else {
+            input.classList.remove('duplicate');
+        }
+    });
+    
+    // Show/hide duplicate warning
+    const submitBtn = document.getElementById('submitPacksBtn');
+    if (duplicates.size > 0) {
+        submitBtn.disabled = true;
+        submitBtn.title = 'Please remove duplicate pack sizes before submitting';
+        showPackMessage(`Duplicate pack sizes detected: ${Array.from(duplicates).join(', ')}. Please remove duplicates.`, false);
+    } else {
+        submitBtn.disabled = false;
+        submitBtn.title = '';
+        // Clear error message if no duplicates
+        const messageEl = document.getElementById('packMessage');
+        if (messageEl.textContent.includes('Duplicate')) {
+            messageEl.style.display = 'none';
+        }
+    }
+    
+    return duplicates.size === 0;
 }
 
 // Update pack sizes via API
 async function updatePackSizes() {
+    // Validate duplicates before submitting
+    if (!validateDuplicates()) {
+        showPackMessage('Please remove duplicate pack sizes before submitting', false);
+        return;
+    }
+    
     const inputs = document.querySelectorAll('#packSizesContainer input');
     const newSizes = [];
 
