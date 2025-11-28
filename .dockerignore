@@ -1,0 +1,8 @@
+bin/
+.git
+.gitignore
+README.md
+*.md
+.vs/
+*.pdf
+*.jpeg
