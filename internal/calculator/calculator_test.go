@@ -132,6 +132,13 @@ func TestCalculatePacks(t *testing.T) {
 			wantPacks: map[int]int{2000: 1, 500: 1},
 			wantTotal: 2500,
 		},
+		{
+			name:      "edge case: large order with small pack sizes",
+			packSizes: []int{23, 31, 53},
+			orderQty:  500000,
+			wantPacks: map[int]int{23: 2, 31: 7, 53: 9429},
+			wantTotal: 500000,
+		},
 	}
 
 	for _, tt := range tests {

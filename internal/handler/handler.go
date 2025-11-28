@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"order-pack-calculator/internal/calculator"
 	"order-pack-calculator/internal/model"
+	"order-pack-calculator/internal/storage"
 	"sort"
 	"sync"
 )
@@ -13,13 +15,34 @@ import (
 type Handler struct {
 	packSizes []int
 	mu        sync.RWMutex
+	storage   *storage.Storage // Optional persistence layer
 }
 
 // NewHandler creates a new handler with initial pack sizes
+// If storage is provided, pack sizes will be persisted to disk
 func NewHandler(initialPackSizes []int) *Handler {
 	return &Handler{
 		packSizes: initialPackSizes,
+		storage:   nil, // No persistence by default
 	}
+}
+
+// NewHandlerWithStorage creates a new handler with persistence
+func NewHandlerWithStorage(initialPackSizes []int, stor *storage.Storage) *Handler {
+	h := &Handler{
+		packSizes: initialPackSizes,
+		storage:   stor,
+	}
+
+	// Try to load pack sizes from storage
+	if stor != nil {
+		if saved, err := stor.LoadPackSizes(); err == nil && len(saved) > 0 {
+			h.packSizes = saved
+			log.Printf("Loaded pack sizes from storage: %v", saved)
+		}
+	}
+
+	return h
 }
 
 // GetPackSizes returns current pack sizes
@@ -29,6 +52,7 @@ func (h *Handler) GetPackSizes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Thread-safe read of pack sizes
 	h.mu.RLock()
 	sizes := make([]int, len(h.packSizes))
 	copy(sizes, h.packSizes)
@@ -68,9 +92,18 @@ func (h *Handler) UpdatePackSizes(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Thread-safe update of pack sizes
 	h.mu.Lock()
 	h.packSizes = req.PackSizes
 	h.mu.Unlock()
+
+	// Persist to storage if available
+	if h.storage != nil {
+		if err := h.storage.SavePackSizes(req.PackSizes); err != nil {
+			// Log error but don't fail the request
+			log.Printf("Warning: failed to save pack sizes to storage: %v", err)
+		}
+	}
 
 	response := model.PackSizesResponse{
 		PackSizes: req.PackSizes,

@@ -4,16 +4,37 @@ import (
 	"log"
 	"net/http"
 	"order-pack-calculator/internal/handler"
+	"order-pack-calculator/internal/storage"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file if it exists (optional, won't fail if missing)
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables or defaults")
+	}
+
+	// Get configuration from environment variables with defaults
 	port := getEnv("PORT", "8080")
 	packSizes := parsePackSizes(getEnv("PACK_SIZES", "250,500,1000,2000,5000"))
+	storageFile := getEnv("STORAGE_FILE", "") // Optional: set to enable persistence
 
-	h := handler.NewHandler(packSizes)
+	// Initialize handler with pack sizes
+	var h *handler.Handler
+	if storageFile != "" {
+		// Use persistence layer
+		stor := storage.NewStorage(storageFile)
+		h = handler.NewHandlerWithStorage(packSizes, stor)
+		log.Printf("Persistence enabled: pack sizes will be saved to %s", storageFile)
+	} else {
+		// No persistence (in-memory only)
+		h = handler.NewHandler(packSizes)
+		log.Println("Persistence disabled: pack sizes are stored in memory only")
+	}
 
 	// API routes
 	http.HandleFunc("/api/packs", func(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +51,7 @@ func main() {
 		}
 	})
 
+	// POST /api/calculate - Calculate optimal pack combination for an order
 	http.HandleFunc("/api/calculate", func(w http.ResponseWriter, r *http.Request) {
 		enableCORS(w)
 		if r.Method == http.MethodOptions {
@@ -47,7 +69,7 @@ func main() {
 	log.Printf("Initial pack sizes: %v", packSizes)
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatal(err)
+		log.Fatal("Server failed to start: ", err)
 	}
 }
 
