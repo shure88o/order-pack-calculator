@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Pack Calculator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Order Pack Calculator</h1>
+
+        <!-- Pack Sizes Configuration Section -->
+        <section class="pack-config">
+            <h2>Pack Sizes</h2>
+            <div id="packSizesContainer"></div>
+            <button id="addPackBtn" class="btn btn-secondary">+ Add Pack Size</button>
+            <div class="button-group">
+                <button id="submitPacksBtn" class="btn btn-primary">Submit Pack Sizes Change</button>
+            </div>
+            <div id="packMessage" class="message"></div>
+        </section>
+
+        <!-- Order Calculator Section -->
+        <section class="calculator">
+            <h2>Calculate Packs for Order</h2>
+            <div class="form-group">
+                <label for="orderQty">Items:</label>
+                <input type="number" id="orderQty" min="0" placeholder="Enter quantity">
+                <button id="calculateBtn" class="btn btn-primary">Calculate</button>
+            </div>
+
+            <div id="resultsContainer" class="results hidden">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Pack Size</th>
+                            <th>Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+                <div id="totalSummary" class="summary"></div>
+            </div>
+            <div id="errorMessage" class="error hidden"></div>
+        </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
